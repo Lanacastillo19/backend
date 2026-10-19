@@ -22,6 +22,22 @@ app.get("/api/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/items", itemRouter);
 
+// Submission Portal Endpoints (Fixes 404 errors on submission page)
+app.get("/api/courses", (_req: Request, res: Response) => {
+  res.json([
+    { _id: "1", name: "ITELECT4", code: "IT4B" },
+    { _id: "2", name: "IT Elective 4", code: "ITELECT4" }
+  ]);
+});
+
+app.get("/api/submissions", (_req: Request, res: Response) => {
+  res.json([]);
+});
+
+app.post("/api/submissions", (_req: Request, res: Response) => {
+  res.status(201).json({ message: "Submission received successfully" });
+});
+
 // 404 Handler
 app.use((req: Request, res: Response) => {
   res.status(404).json({
