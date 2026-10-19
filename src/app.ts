@@ -28,16 +28,37 @@ app.get("/api/courses", (_req: Request, res: Response) => {
     {
       _id: "1",
       name: "ITELECT4",
-      title: "ITELECT4",
+      title: "IT Elective 4 (ITELECT4)",
       code: "IT4B",
       description: "IT Elective 4"
     },
     {
       _id: "2",
-      name: "IT Elective 4",
-      title: "IT Elective 4",
-      code: "ITELECT4",
-      description: "IT Elective 4"
+      name: "IT Elective 3",
+      title: "IT Elective 3 (ITELECT3)",
+      code: "ITELECT3",
+      description: "IT Elective 3"
+    },
+    {
+      _id: "3",
+      name: "Web Systems and Technologies",
+      title: "Web Systems and Technologies (WEB101)",
+      code: "WEB101",
+      description: "Full-Stack Web Development"
+    },
+    {
+      _id: "4",
+      name: "Database Management Systems",
+      title: "Database Management Systems (DBMS101)",
+      code: "DBMS101",
+      description: "Relational Databases & SQL"
+    },
+    {
+      _id: "5",
+      name: "Networking and Communications",
+      title: "Networking and Communications (NET101)",
+      code: "NET101",
+      description: "Computer Networks & Protocols"
     }
   ]);
 });
