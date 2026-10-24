@@ -12,16 +12,10 @@ import { Submission } from "./models/Submission.js";
 
 export const app = express();
 
-// Configured CORS middleware to allow Vercel previews, production, and localhost
+// Configured CORS middleware to dynamically reflect request origin
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || origin.endsWith(".vercel.app") || origin.includes("localhost")) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
