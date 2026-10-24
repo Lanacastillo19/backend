@@ -57,10 +57,15 @@ app.use(async (_req: Request, _res: Response, next: NextFunction) => {
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true, db: mongoose.connection.readyState === 1 });
 });
+app.get("/health", (_req: Request, res: Response) => {
+  res.json({ ok: true, db: mongoose.connection.readyState === 1 });
+});
 
 // Route Mounts (Supports both /api/* and /* endpoints)
 app.use("/api/auth", authRouter);
 app.use("/auth", authRouter);
+app.use("/api", authRouter);
+app.use("/", authRouter);
 
 app.use("/api/items", itemRouter);
 app.use("/items", itemRouter);
@@ -76,3 +81,5 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.status(500).json({ message: "Internal server error", error: err.message });
 });
+
+export default app;
