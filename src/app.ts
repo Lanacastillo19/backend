@@ -29,7 +29,7 @@ const connectDB = async () => {
   isConnected = true;
 };
 
-// Database Connection Middleware
+// Connection Middleware
 app.use(async (_req: Request, _res: Response, next: NextFunction) => {
   try {
     await connectDB();
@@ -40,7 +40,7 @@ app.use(async (_req: Request, _res: Response, next: NextFunction) => {
   }
 });
 
-// Health check endpoint
+// Health Check
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true, db: mongoose.connection.readyState === 1 });
 });

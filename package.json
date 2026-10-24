@@ -4,7 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "echo 'Skipping build step for Vercel serverless'",
     "start": "node dist/server.js",
     "try-ai": "tsx src/ai/try-ai.ts",
     "typecheck": "tsc --noEmit"
