@@ -39,6 +39,27 @@ app.get("/api/courses", (_req: Request, res: Response) => {
       title: "IT Elective 3 (ITELECT3)",
       code: "ITELECT3",
       description: "IT Elective 3"
+    },
+    {
+      _id: "3",
+      name: "Web Systems and Technologies",
+      title: "Web Systems and Technologies (WEB101)",
+      code: "WEB101",
+      description: "Full-Stack Web Development"
+    },
+    {
+      _id: "4",
+      name: "Database Management Systems",
+      title: "Database Management Systems (DBMS101)",
+      code: "DBMS101",
+      description: "Relational Databases & SQL"
+    },
+    {
+      _id: "5",
+      name: "Networking and Communications",
+      title: "Networking and Communications (NET101)",
+      code: "NET101",
+      description: "Computer Networks & Protocols"
     }
   ]);
 });
@@ -47,7 +68,6 @@ app.get("/api/courses", (_req: Request, res: Response) => {
 app.get("/api/submissions", async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const submissions = await Submission.find().sort({ createdAt: -1 });
-    // Map to normalized structure for frontend compatibility
     const formatted = submissions.map((s) => ({
       _id: s._id,
       id: s._id,
