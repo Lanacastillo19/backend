@@ -21,9 +21,14 @@ let isConnected = false;
 const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
 
-  const uri =
+  let uri =
     process.env.MONGODB_URI ||
     "mongodb+srv://lanaleecastillo_db_user:gzXEMWbtaJ9vz4QW@cluster0.xtg4ada.mongodb.net/?retryWrites=true&w=majority";
+
+  // Enforce .mongodb.net suffix if missing from environment variable
+  if (uri.includes("cluster0.xtg4ada") && !uri.includes("cluster0.xtg4ada.mongodb.net")) {
+    uri = uri.replace("cluster0.xtg4ada", "cluster0.xtg4ada.mongodb.net");
+  }
 
   await mongoose.connect(uri);
   isConnected = true;
