@@ -22,6 +22,9 @@ app.use(
   })
 );
 
+// Explicit preflight OPTIONS handler for all endpoints
+app.options("*", cors());
+
 app.use(express.json());
 
 // Health Check Endpoint
