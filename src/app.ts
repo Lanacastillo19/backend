@@ -27,16 +27,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(cors());
 app.use(express.json());
 
-// Non-blocking Database Connection
+// Serverless-Friendly Database Connection
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
 
-  // The connection string comes from .env (and Vercel), never from the code.
   const uri = process.env.MONGODB_URI;
   if (!uri) {
     console.error("MONGODB_URI is missing. Add it to .env and Vercel.");
-    return;
+    throw new Error("MONGODB_URI is not defined");
   }
 
   try {
@@ -44,12 +43,18 @@ const connectDB = async () => {
     isConnected = true;
   } catch (err) {
     console.error("MongoDB connection failed:", err);
+    throw err;
   }
 };
 
-app.use((_req: Request, _res: Response, next: NextFunction) => {
-  connectDB().catch(console.error);
-  next();
+// Async middleware ensuring DB connection is established before route execution
+app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Root / Health Check
@@ -58,7 +63,6 @@ app.get(["/", "/api", "/api/health", "/health"], (_req: Request, res: Response) 
 });
 
 // Mount modular routers
-// (Login is handled by authRouter, which issues a real JWT token.)
 app.use("/api/auth", authRouter);
 app.use("/auth", authRouter);
 app.use("/api/items", itemRouter);
