@@ -1,12 +1,7 @@
 import "dotenv/config";
-import { app } from "./app.js";
-import { connectDB } from "./config/db.js";
+import { app } from "./app";
 
 const PORT = Number(process.env.PORT) || 4000;
-
-connectDB().catch((err) => {
-  console.error("MongoDB connection error:", err);
-});
 
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
