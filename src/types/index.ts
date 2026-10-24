@@ -1,57 +1,125 @@
-import type { Types } from "mongoose";
+import express, { type Request, type Response, type NextFunction } from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import { authRouter } from "./routes/auth.js";
+import { itemRouter } from "./routes/items.js";
+import { aiRouter } from "./routes/ai.js";
+import { Submission } from "./models/Submission.js";
 
-// --- USER TYPES ---
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "student" | "admin" | "instructor";
-  isActive: boolean;
-}
+export const app = express();
 
-export type UserDoc = Omit<User, "id"> & {
-  password: string;
+// Configured CORS middleware
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.options("*", cors());
+app.use(express.json());
+
+// Serverless MongoDB Connection Middleware
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected && mongoose.connection.readyState === 1) return;
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI environment variable is missing");
+  }
+  await mongoose.connect(process.env.MONGODB_URI);
+  isConnected = true;
 };
 
-// --- COURSE TYPES ---
-export interface Course {
-  id: string;
-  code: string;
-  title: string;
-  description: string;
-  instructorId: string;
-  createdAt: Date;
-}
+app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
-export type CourseDoc = Omit<Course, "id" | "instructorId"> & {
-  instructorId: Types.ObjectId;
-};
+// Health Check Endpoint
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ ok: true, db: mongoose.connection.readyState === 1 });
+});
 
-export type NewCourseBody = Pick<Course, "code" | "title" | "description">;
+// Route Mounts
+app.use("/api/auth", authRouter);
+app.use("/api/items", itemRouter);
+app.use("/api/ai", aiRouter);
 
-// --- SUBMISSION & AI REVIEW TYPES ---
-export interface ReviewFeedback {
-  summary: string;
-  strengths: string[];
-  improvements: string[];
-  readiness: "ready" | "almost" | "not-yet";
-}
+// Courses Endpoint
+app.get("/api/courses", (_req: Request, res: Response) => {
+  res.json([
+    { _id: "1", name: "ITELECT4", title: "IT Elective 4 (ITELECT4)", code: "IT4B", description: "IT Elective 4" },
+    { _id: "2", name: "IT Elective 3", title: "IT Elective 3 (ITELECT3)", code: "ITELECT3", description: "IT Elective 3" },
+    { _id: "3", name: "Web Systems and Technologies", title: "Web Systems and Technologies (WEB101)", code: "WEB101", description: "Full-Stack Web Development" },
+    { _id: "4", name: "Database Management Systems", title: "Database Management Systems (DBMS101)", code: "DBMS101", description: "Relational Databases & SQL" },
+    { _id: "5", name: "Networking and Communications", title: "Networking and Communications (NET101)", code: "NET101", description: "Computer Networks & Protocols" }
+  ]);
+});
 
-export interface Submission {
-  id: string;
-  userId: string;
-  courseId?: string;
-  description: string;
-  review?: ReviewFeedback;
-  createdAt: Date;
-}
+// Submissions Endpoints
+app.get("/api/submissions", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const submissions = await Submission.find().sort({ createdAt: -1 });
+    const formatted = submissions.map((s) => ({
+      _id: s._id,
+      id: s._id,
+      courseId: s.courseId,
+      course: s.courseId,
+      repoUrl: s.repoUrl,
+      repositoryUrl: s.repoUrl,
+      createdAt: s.createdAt,
+    }));
+    res.json(formatted);
+  } catch (err) {
+    next(err);
+  }
+});
 
-export type SubmissionDoc = Omit<Submission, "id" | "userId" | "courseId"> & {
-  userId: Types.ObjectId;
-  courseId?: Types.ObjectId;
-};
+app.post("/api/submissions", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { courseId, course, repoUrl, repositoryUrl } = req.body;
+    const selectedCourse = courseId || course || "1";
+    const selectedUrl = repoUrl || repositoryUrl;
 
-export type NewSubmissionBody = {
-  courseId?: string;
-  description: string;
-};
+    if (!selectedUrl) {
+      res.status(400).json({ message: "Repository URL is required" });
+      return;
+    }
+
+    const created = await Submission.create({
+      courseId: selectedCourse,
+      repoUrl: selectedUrl,
+    });
+
+    res.status(201).json({
+      _id: created._id,
+      id: created._id,
+      courseId: created.courseId,
+      course: created.courseId,
+      repoUrl: created.repoUrl,
+      repositoryUrl: created.repoUrl,
+      createdAt: created.createdAt,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// 404 Handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ message: `No route for ${req.method} ${req.originalUrl}` });
+});
+
+// Global Error Handler
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({ message: "Something went wrong", error: err.message });
+});
+
+export default app;
