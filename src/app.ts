@@ -32,9 +32,12 @@ let isConnected = false;
 const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
 
-  const uri =
-    process.env.MONGODB_URI ||
-    "mongodb+srv://lanaleecastillo_db_user:gzXEMWbtaJ9vz4QW@cluster0.xtg4ada.mongodb.net/?retryWrites=true&w=majority";
+  // The connection string comes from .env (and Vercel), never from the code.
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error("MONGODB_URI is missing. Add it to .env and Vercel.");
+    return;
+  }
 
   try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
@@ -54,28 +57,8 @@ app.get(["/", "/api", "/api/health", "/health"], (_req: Request, res: Response) 
   res.status(200).json({ ok: true, message: "Backend is running live" });
 });
 
-// Direct Login Route Handler (Intercepts all path patterns)
-const handleLogin = async (req: Request, res: Response) => {
-  const { email, username } = req.body || {};
-  const identifier = email || username || "Guest User";
-
-  return res.status(200).json({
-    token: "mock-jwt-token-xyz-123",
-    user: {
-      id: "1",
-      name: identifier.split("@")[0],
-      email: identifier,
-      role: "STUDENT",
-    },
-  });
-};
-
-app.post("/api/auth/login", handleLogin);
-app.post("/auth/login", handleLogin);
-app.post("/api/login", handleLogin);
-app.post("/login", handleLogin);
-
 // Mount modular routers
+// (Login is handled by authRouter, which issues a real JWT token.)
 app.use("/api/auth", authRouter);
 app.use("/auth", authRouter);
 app.use("/api/items", itemRouter);

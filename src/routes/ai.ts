@@ -1,32 +1,30 @@
-// src/routes/ai.ts
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { rateLimit } from "express-rate-limit";
+import { ApiError } from "@google/genai";
 import { requireAuth } from "../middleware/auth";
 import { aiRequestSchema } from "../schemas/review";
 import { reviewProject, AiReplyError } from "../ai/gemini";
 
-// Named export matching import { aiRouter } in src/app.ts
 export const aiRouter = Router();
 
-// Private route guard
+// Private: every call spends YOUR Gemini quota, so you must be logged in.
 aiRouter.use(requireAuth);
 
-// Rate limiter: 5 requests per minute per account
+// Five requests a minute per account.
+// It sits below requireAuth, so req.userId already exists here.
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 5,
   keyGenerator: (req: Request) => req.userId!,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: {
-    message: "Five reviews a minute is the limit. Try again shortly.",
-  },
+  message: { message: "Five reviews a minute is the limit. Try again shortly." },
 });
-
 aiRouter.use(aiLimiter);
 
 // POST /api/ai
-aiRouter.post("/", async (req: Request, res: Response) => {
+aiRouter.post("/", async (req: Request, res: Response, next: NextFunction) => {
+  // 400: the body is checked BEFORE Gemini is called, so a bad request costs nothing.
   const parsed = aiRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -39,27 +37,25 @@ aiRouter.post("/", async (req: Request, res: Response) => {
   try {
     const review = await reviewProject(parsed.data.prompt);
     res.json(review);
-  } catch (err: any) {
-    console.error("Gemini API Error Detail:", err);
-
-    // Rate limits / Quota exceeded
-    if (err?.status === 429 || err?.statusCode === 429) {
+  } catch (err) {
+    // 429: Gemini's own quota is used up.
+    if (err instanceof ApiError && err.status === 429) {
       res.status(429).json({
         message: "The AI quota is used up for now. Try again later.",
       });
       return;
     }
 
-    // Handle generic Google AI API or JSON parse errors gracefully
-    if (err instanceof AiReplyError || err?.status || err?.message) {
+    // 502: Gemini failed, or its reply was unusable.
+    if (err instanceof ApiError || err instanceof AiReplyError) {
+      console.error(err); // the real reason goes to the log, not the browser
       res.status(502).json({
-        message: err.message || "The AI service did not answer properly. Try again.",
+        message: "The AI service did not answer properly. Try again.",
       });
       return;
     }
 
-    res.status(500).json({
-      message: "Internal server error while generating AI review.",
-    });
+    // Anything else is a bug: pass it to app.ts's error handler.
+    next(err);
   }
 });
