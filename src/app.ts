@@ -7,6 +7,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { authRouter } from "./routes/auth.js";
 import { itemRouter } from "./routes/items.js";
+import { Submission } from "./models/Submission.js";
 
 export const app = express();
 
@@ -22,7 +23,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/items", itemRouter);
 
-// Submission Portal Endpoints
+// Courses Endpoint
 app.get("/api/courses", (_req: Request, res: Response) => {
   res.json([
     {
@@ -38,37 +39,60 @@ app.get("/api/courses", (_req: Request, res: Response) => {
       title: "IT Elective 3 (ITELECT3)",
       code: "ITELECT3",
       description: "IT Elective 3"
-    },
-    {
-      _id: "3",
-      name: "Web Systems and Technologies",
-      title: "Web Systems and Technologies (WEB101)",
-      code: "WEB101",
-      description: "Full-Stack Web Development"
-    },
-    {
-      _id: "4",
-      name: "Database Management Systems",
-      title: "Database Management Systems (DBMS101)",
-      code: "DBMS101",
-      description: "Relational Databases & SQL"
-    },
-    {
-      _id: "5",
-      name: "Networking and Communications",
-      title: "Networking and Communications (NET101)",
-      code: "NET101",
-      description: "Computer Networks & Protocols"
     }
   ]);
 });
 
-app.get("/api/submissions", (_req: Request, res: Response) => {
-  res.json([]);
+// GET all submissions from MongoDB
+app.get("/api/submissions", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const submissions = await Submission.find().sort({ createdAt: -1 });
+    // Map to normalized structure for frontend compatibility
+    const formatted = submissions.map((s) => ({
+      _id: s._id,
+      id: s._id,
+      courseId: s.courseId,
+      course: s.courseId,
+      repoUrl: s.repoUrl,
+      repositoryUrl: s.repoUrl,
+      createdAt: s.createdAt,
+    }));
+    res.json(formatted);
+  } catch (err) {
+    next(err);
+  }
 });
 
-app.post("/api/submissions", (_req: Request, res: Response) => {
-  res.status(201).json({ message: "Submission received successfully" });
+// POST new submission to MongoDB
+app.post("/api/submissions", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { courseId, course, repoUrl, repositoryUrl } = req.body;
+    
+    const selectedCourse = courseId || course || "1";
+    const selectedUrl = repoUrl || repositoryUrl;
+
+    if (!selectedUrl) {
+      res.status(400).json({ message: "Repository URL is required" });
+      return;
+    }
+
+    const created = await Submission.create({
+      courseId: selectedCourse,
+      repoUrl: selectedUrl,
+    });
+
+    res.status(201).json({
+      _id: created._id,
+      id: created._id,
+      courseId: created.courseId,
+      course: created.courseId,
+      repoUrl: created.repoUrl,
+      repositoryUrl: created.repoUrl,
+      createdAt: created.createdAt,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // 404 Handler
