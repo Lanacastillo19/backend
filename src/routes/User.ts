@@ -1,43 +1,34 @@
-import { Schema, model } from "mongoose";
-import bcrypt from "bcryptjs";
-import type { UserDoc } from "../types/index.js";
+import { Router, type Request, type Response } from "express";
+import mongoose from "mongoose";
+import "../models/User"; // loads the existing model so it is registered once
+import { requireAuth } from "../middleware/auth";
 
-const userSchema = new Schema<UserDoc>(
-  {
-    name: { type: String, required: true, trim: true },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    role: {
-      type: String,
-      enum: ["student", "admin", "instructor"],
-      default: "student",
-    },
-    isActive: { type: Boolean, default: true },
-    password: { type: String, required: true, minlength: 8, select: false },
-  },
-  { timestamps: true }
-);
+// Get the model that models/User.ts already registered.
+// Do NOT define the schema or call mongoose.model("User", schema) here.
+const User = mongoose.model("User");
 
-// Hashes password automatically before saving
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
-  this.password = await bcrypt.hash(this.password, 10);
+export const userRouter = Router();
+export default userRouter;
+
+// Private: every route below needs a valid token
+userRouter.use(requireAuth);
+
+// GET /api/users
+userRouter.get("/", async (_req: Request, res: Response) => {
+  const users = await User.find();
+  res.json(users);
 });
 
-// Converts _id to id and removes sensitive fields from output
-userSchema.set("toJSON", {
-  transform(_doc, ret: Record<string, unknown>) {
-    ret.id = String(ret._id);
-    delete ret._id;
-    delete ret.__v;
-    delete ret.password;
-    return ret;
-  },
+// GET /api/users/:id
+userRouter.get("/:id", async (req: Request, res: Response) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid user id" });
+    return;
+  }
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+  res.json(user);
 });
-
-export const User = model<UserDoc>("User", userSchema);
