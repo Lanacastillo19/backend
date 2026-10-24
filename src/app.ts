@@ -12,7 +12,22 @@ import { Submission } from "./models/Submission.js";
 
 export const app = express();
 
-app.use(cors());
+// Configured CORS middleware to allow Vercel previews, production, and localhost
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || origin.endsWith(".vercel.app") || origin.includes("localhost")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
 
 // Health Check Endpoint
@@ -146,3 +161,5 @@ app.use(
     res.status(500).json({ message: "Something went wrong" });
   }
 );
+
+export default app;
