@@ -1,6 +1,6 @@
 import type { Types } from "mongoose";
 
-// Base User Interface
+// --- USER TYPES ---
 export interface User {
   id: string;
   name: string;
@@ -9,25 +9,49 @@ export interface User {
   isActive: boolean;
 }
 
-// User Document shape stored in MongoDB (includes hashed password)
 export type UserDoc = Omit<User, "id"> & {
   password: string;
 };
 
-// Base Item Interface (Your custom resource)
-export interface Item {
+// --- COURSE TYPES ---
+export interface Course {
   id: string;
-  userId: string;
-  name: string;
-  category: "work" | "personal" | "urgent";
-  priority: number;
+  code: string;
+  title: string;
+  description: string;
+  instructorId: string;
   createdAt: Date;
 }
 
-// Item Document shape stored in MongoDB (userId is stored as ObjectId)
-export type ItemDoc = Omit<Item, "id" | "userId"> & {
-  userId: Types.ObjectId;
+export type CourseDoc = Omit<Course, "id" | "instructorId"> & {
+  instructorId: Types.ObjectId;
 };
 
-// Request Body expected when creating a new Item
-export type NewItemBody = Pick<Item, "name" | "category" | "priority">;
+export type NewCourseBody = Pick<Course, "code" | "title" | "description">;
+
+// --- SUBMISSION & AI REVIEW TYPES ---
+export interface ReviewFeedback {
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  readiness: "ready" | "almost" | "not-yet";
+}
+
+export interface Submission {
+  id: string;
+  userId: string;
+  courseId?: string;
+  description: string;
+  review?: ReviewFeedback;
+  createdAt: Date;
+}
+
+export type SubmissionDoc = Omit<Submission, "id" | "userId" | "courseId"> & {
+  userId: Types.ObjectId;
+  courseId?: Types.ObjectId;
+};
+
+export type NewSubmissionBody = {
+  courseId?: string;
+  description: string;
+};
