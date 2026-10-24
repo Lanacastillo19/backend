@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 
 export const app = express();
 
-// Enable CORS for frontend requests
 app.use(
   cors({
     origin: true,
@@ -21,10 +20,11 @@ app.use(express.json());
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error("MONGODB_URI environment variable is missing");
-  }
+
+  const uri =
+    process.env.MONGODB_URI ||
+    "mongodb+srv://lanaleecastillo_db_user:gzXEMWbtaJ9vz4QW@cluster0.xtg4ada.mongodb.net/?retryWrites=true&w=majority";
+
   await mongoose.connect(uri);
   isConnected = true;
 };
@@ -43,11 +43,6 @@ app.use(async (_req: Request, _res: Response, next: NextFunction) => {
 // Health check endpoint
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true, db: mongoose.connection.readyState === 1 });
-});
-
-// Minimal dummy Auth route fallback if external route imports fail
-app.post("/api/auth/login", (_req: Request, res: Response) => {
-  res.json({ token: "dummy-token", user: { email: "lana_lee_castillio@dlsl.edu.ph" } });
 });
 
 // Global Error Handler
