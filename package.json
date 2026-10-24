@@ -26,6 +26,7 @@
     "@types/express": "^4.17.25",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.43",
+    "@vercel/node": "^27.0.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }

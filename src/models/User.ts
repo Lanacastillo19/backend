@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 import bcrypt from "bcryptjs";
 import type { UserDoc } from "../types/index";
 
@@ -38,4 +38,6 @@ userSchema.set("toJSON", {
   },
 });
 
-export const User = model<UserDoc>("User", userSchema);
+// Reuse existing compiled model if present, otherwise compile new model
+export const User = (models.User as mongoose.Model<UserDoc>) || model<UserDoc>("User", userSchema);
+export default User;
