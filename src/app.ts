@@ -7,6 +7,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { authRouter } from "./routes/auth.js";
 import { itemRouter } from "./routes/items.js";
+import { aiRouter } from "./routes/ai.js";
 import { Submission } from "./models/Submission.js";
 
 export const app = express();
@@ -22,6 +23,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 // Route Mounts
 app.use("/api/auth", authRouter);
 app.use("/api/items", itemRouter);
+app.use("/api/ai", aiRouter); // Session 11: Mounted AI router
 
 // Courses Endpoint
 app.get("/api/courses", (_req: Request, res: Response) => {
