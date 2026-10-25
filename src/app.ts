@@ -8,6 +8,7 @@ import { itemRouter } from "./routes/items";
 import * as UserModule from "./routes/User";
 import { aiRouter } from "./routes/ai";
 import { submissionRouter } from "./routes/submissions";
+import { courseRouter } from "./routes/courses";
 
 const userRouter = ((UserModule as any).default || (UserModule as any).userRouter || UserModule) as express.Router;
 
@@ -78,6 +79,9 @@ app.use("/ai", aiRouter);
 
 app.use("/api/submissions", submissionRouter);
 app.use("/submissions", submissionRouter);
+
+app.use("/api/courses", courseRouter);
+app.use("/courses", courseRouter);
 
 // Global Catch-All for unknown routes
 app.use((_req: Request, res: Response) => {
