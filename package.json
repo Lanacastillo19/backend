@@ -4,18 +4,12 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-<<<<<<< HEAD
     "build": "echo 'Skipping build step for Vercel serverless'",
-=======
-    "try-ai": "tsx src/try-ai.ts",
-    "build": "tsc",
->>>>>>> 2d71b80 (Add submission router and Mongoose schema)
     "start": "node dist/server.js",
     "try-ai": "tsx src/ai/try-ai.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^2.31.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
