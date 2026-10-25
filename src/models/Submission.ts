@@ -1,15 +1,20 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { Schema, model } from "mongoose";
 
-export interface ISubmission extends Document {
-  courseId: string;
-  repoUrl: string;
-  createdAt: Date;
-}
+const submissionSchema = new Schema(
+  {
+    studentId: { type: Schema.Types.ObjectId, ref: "User" },
+    courseCode: { type: String, required: true },
+    title: { type: String, required: true },
+    repoUrl: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["PENDING", "GRADED", "REJECTED"],
+      default: "PENDING",
+    },
+    score: { type: Number, default: 0 },
+    submittedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
 
-const SubmissionSchema: Schema = new Schema({
-  courseId: { type: String, required: true },
-  repoUrl: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
-
-export const Submission = mongoose.model<ISubmission>("Submission", SubmissionSchema);
+export const Submission = model("Submission", submissionSchema);

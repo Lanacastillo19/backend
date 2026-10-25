@@ -1,61 +1,40 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
-import { rateLimit } from "express-rate-limit";
-import { ApiError } from "@google/genai";
-import { requireAuth } from "../middleware/auth";
-import { aiRequestSchema } from "../schemas/review";
-import { reviewProject, AiReplyError } from "../ai/gemini";
+import { Router, Request, Response } from "express";
 
-export const aiRouter = Router();
+const router = Router();
 
-// Private: every call spends YOUR Gemini quota, so you must be logged in.
-aiRouter.use(requireAuth);
-
-// Five requests a minute per account.
-// It sits below requireAuth, so req.userId already exists here.
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 5,
-  keyGenerator: (req: Request) => req.userId!,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { message: "Five reviews a minute is the limit. Try again shortly." },
-});
-aiRouter.use(aiLimiter);
-
-// POST /api/ai
-aiRouter.post("/", async (req: Request, res: Response, next: NextFunction) => {
-  // 400: the body is checked BEFORE Gemini is called, so a bad request costs nothing.
-  const parsed = aiRequestSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({
-      message: "Validation failed",
-      errors: parsed.error.issues.map((issue) => issue.message),
-    });
-    return;
-  }
-
+router.post("/", async (req: Request, res: Response) => {
   try {
-    const review = await reviewProject(parsed.data.prompt);
-    res.json(review);
-  } catch (err) {
-    // 429: Gemini's own quota is used up.
-    if (err instanceof ApiError && err.status === 429) {
-      res.status(429).json({
-        message: "The AI quota is used up for now. Try again later.",
-      });
-      return;
+    const { prompt } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ message: "GEMINI_API_KEY is missing from environment variables." });
     }
 
-    // 502: Gemini failed, or its reply was unusable.
-    if (err instanceof ApiError || err instanceof AiReplyError) {
-      console.error(err); // the real reason goes to the log, not the browser
-      res.status(502).json({
-        message: "The AI service did not answer properly. Try again.",
-      });
-      return;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 500 }
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to call Gemini API");
     }
 
-    // Anything else is a bug: pass it to app.ts's error handler.
-    next(err);
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+    return res.status(200).json({ reply });
+  } catch (error: any) {
+    console.error("AI Route Error:", error);
+    return res.status(500).json({ message: "AI generation failed", error: error.message });
   }
 });
+
+export const aiRouter = router;
