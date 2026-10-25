@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 
@@ -7,10 +7,11 @@ import { authRouter } from "./routes/auth";
 import { itemRouter } from "./routes/items";
 import * as UserModule from "./routes/User";
 import { aiRouter } from "./routes/ai";
+import { submissionRouter } from "./routes/submissions";
 
-const userRouter = ((UserModule as any).default || (UserModule as any).userRouter || (UserModule as any).router || UserModule) as express.Router;
+const userRouter = ((UserModule as any).default || (UserModule as any).userRouter || UserModule) as express.Router;
 
-export const app = express();
+const app = express();
 
 // Global CORS Middleware - Ensures headers are sent even on errors
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -62,15 +63,21 @@ app.get(["/", "/api", "/api/health", "/health"], (_req: Request, res: Response) 
   res.status(200).json({ ok: true, message: "Backend is running live" });
 });
 
-// Mount modular routers
+// Mount modular routers (handling both /api and legacy path aliases)
 app.use("/api/auth", authRouter);
 app.use("/auth", authRouter);
+
 app.use("/api/items", itemRouter);
 app.use("/items", itemRouter);
+
 app.use("/api/users", userRouter);
 app.use("/users", userRouter);
+
 app.use("/api/ai", aiRouter);
 app.use("/ai", aiRouter);
+
+app.use("/api/submissions", submissionRouter);
+app.use("/submissions", submissionRouter);
 
 // Global Catch-All for unknown routes
 app.use((_req: Request, res: Response) => {
