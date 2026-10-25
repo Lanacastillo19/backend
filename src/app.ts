@@ -32,8 +32,8 @@ const connectDB = async () => {
 
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    console.error("MONGODB_URI is missing. Add it to .env and Vercel.");
-    throw new Error("MONGODB_URI is not defined");
+    console.warn("MONGODB_URI missing from environment variables.");
+    return;
   }
 
   try {
@@ -41,18 +41,17 @@ const connectDB = async () => {
     isConnected = true;
   } catch (err) {
     console.error("MongoDB connection failed:", err);
-    throw err;
   }
 };
 
-// Async middleware ensuring DB connection is established before route execution
+// Async middleware ensuring DB connection attempt for routes
 app.use(async (_req: Request, _res: Response, next: NextFunction) => {
   try {
     await connectDB();
-    next();
   } catch (err) {
-    next(err);
+    console.error("DB Middleware warning:", err);
   }
+  next();
 });
 
 // Root / Health Check
@@ -60,7 +59,7 @@ app.get(["/", "/api", "/api/health", "/health"], (_req: Request, res: Response) 
   res.status(200).json({ ok: true, message: "Backend is running live" });
 });
 
-// Mount modular routers (handling both /api and legacy path aliases)
+// Mount modular routers
 app.use("/api/auth", authRouter);
 app.use("/auth", authRouter);
 
@@ -70,6 +69,7 @@ app.use("/items", itemRouter);
 app.use("/api/users", userRouter);
 app.use("/users", userRouter);
 
+// Task Coach AI Router (Public & direct)
 app.use("/api/ai", aiRouter);
 app.use("/ai", aiRouter);
 
