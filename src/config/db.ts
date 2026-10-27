@@ -1,14 +1,23 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+
+let isConnected = false;
 
 export const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
+  if (isConnected) {
+    return;
+  }
 
   const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error('MONGODB_URI is not defined in environment variables');
+  if (!uri) {
+    throw new Error("MONGODB_URI is not defined in environment variables.");
+  }
 
-  return await mongoose.connect(uri, {
-    family: 4, // Force IPv4 (bypasses Vercel IPv6 routing timeouts)
-    serverSelectionTimeoutMS: 5000, // Stop hanging indefinitely on failure
-    bufferCommands: false, // Prevents queries from queueing indefinitely if connection drops
-  });
+  try {
+    const db = await mongoose.connect(uri);
+    isConnected = db.connections[0].readyState === 1;
+    console.log("MongoDB Connected Successfully");
+  } catch (error) {
+    console.error("MongoDB Connection Error:", error);
+    throw error;
+  }
 };
