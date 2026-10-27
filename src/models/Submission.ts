@@ -18,3 +18,4 @@ const submissionSchema = new Schema(
 );
 
 export const Submission = model("Submission", submissionSchema);
+export default Submission;
