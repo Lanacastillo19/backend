@@ -1,43 +1,35 @@
-import { Router, type Request, type Response } from "express";
-import { Course } from "../models/Course";
+import { Router, Request, Response } from "express";
+import mongoose from "mongoose";
 
-export const courseRouter = Router();
+const router = Router();
 
-// GET /api/courses - Retrieve all persisted courses/subjects
-courseRouter.get("/", async (_req: Request, res: Response) => {
+// Simple Schema check if using Mongoose
+const courseSchema = new mongoose.Schema({
+  title: String,
+  code: String,
+  description: String,
+});
+
+const Course = mongoose.models.Course || mongoose.model("Course", courseSchema);
+
+router.get("/", async (req: Request, res: Response) => {
   try {
-    const courses = await Course.find().sort({ code: 1 });
-    return res.json(courses);
-  } catch (err) {
-    console.error("Fetch courses error:", err);
-    return res.status(500).json({ message: "Failed to fetch courses." });
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      return res.status(500).json({ message: "MONGODB_URI environment variable is not defined." });
+    }
+
+    // Connect if not already connected (vital for serverless functions)
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(mongoUri);
+    }
+
+    const courses = await Course.find({});
+    return res.status(200).json(courses);
+  } catch (error: any) {
+    console.error("Database fetch error:", error);
+    return res.status(500).json({ message: "Failed to fetch courses.", error: error.message });
   }
 });
 
-// POST /api/courses - Save a new subject to MongoDB
-courseRouter.post("/", async (req: Request, res: Response) => {
-  try {
-    const { code, title, description } = req.body;
-    if (!code || !title) {
-      return res.status(400).json({ message: "Course code and title are required." });
-    }
-
-    const uppercaseCode = code.trim().toUpperCase();
-    const existing = await Course.findOne({ code: uppercaseCode });
-
-    if (existing) {
-      return res.status(200).json(existing);
-    }
-
-    const newCourse = await Course.create({
-      code: uppercaseCode,
-      title: title.trim(),
-      description: description ? description.trim() : "",
-    });
-
-    return res.status(201).json(newCourse);
-  } catch (err) {
-    console.error("Save course error:", err);
-    return res.status(500).json({ message: "Failed to save course." });
-  }
-});
+export default router;

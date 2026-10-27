@@ -1,44 +1,41 @@
-import { Router, type Request, type Response } from "express";
+import { Router, Request, Response } from "express";
 import { Submission } from "../models/Submission";
-import { requireAuth } from "../middleware/auth";
 
-export const submissionRouter = Router();
-
-// Protect all submission routes behind authentication
-submissionRouter.use(requireAuth);
+const router = Router();
 
 // GET /api/submissions - Fetch all submissions
-submissionRouter.get("/", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const submissions = await Submission.find().sort({ createdAt: -1 });
-    return res.json(submissions);
-  } catch (err) {
-    console.error("Failed to fetch submissions:", err);
-    return res.status(500).json({ message: "Failed to fetch submissions." });
+    res.json(submissions);
+  } catch (error) {
+    console.error("Error fetching submissions:", error);
+    res.status(500).json({ error: "Failed to fetch submissions" });
   }
 });
 
 // POST /api/submissions - Create a new submission
-submissionRouter.post("/", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
-    const { courseCode, title, repoUrl } = req.body;
+    const { courseId, title, repoUrl } = req.body;
 
-    if (!courseCode || !title || !repoUrl) {
-      return res.status(400).json({ message: "All fields are required." });
+    if (!courseId || !title || !repoUrl) {
+      return res.status(400).json({ error: "courseId, title, and repoUrl are required" });
     }
 
     const newSubmission = await Submission.create({
-      studentId: req.userId,
-      courseCode,
+      courseId,
       title,
       repoUrl,
-      status: "PENDING",
-      submittedAt: new Date(),
+      status: "Submitted",
+      createdAt: new Date(),
     });
 
-    return res.status(201).json(newSubmission);
-  } catch (err) {
-    console.error("Submission creation failed:", err);
-    return res.status(500).json({ message: "Failed to create submission." });
+    res.status(201).json(newSubmission);
+  } catch (error) {
+    console.error("Error creating submission:", error);
+    res.status(500).json({ error: "Failed to save submission to database" });
   }
 });
+
+export default router;
