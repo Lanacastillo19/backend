@@ -1,11 +1,13 @@
 import { Router } from "express";
 import Submission from "../models/Submission";
+import { connectDB } from "../config/db";
 
 const router = Router();
 
 // GET /api/submissions
 router.get("/", async (req, res) => {
   try {
+    await connectDB();
     const submissions = await Submission.find().sort({ createdAt: -1 });
     res.json(submissions);
   } catch (error) {
@@ -17,6 +19,7 @@ router.get("/", async (req, res) => {
 // POST /api/submissions
 router.post("/", async (req, res) => {
   try {
+    await connectDB();
     const { courseId, title, repoUrl } = req.body;
 
     if (!courseId || !title || !repoUrl) {
