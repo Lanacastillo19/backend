@@ -3,7 +3,7 @@ import { Schema, model } from "mongoose";
 const submissionSchema = new Schema(
   {
     studentId: { type: Schema.Types.ObjectId, ref: "User" },
-    courseCode: { type: String, required: true },
+    courseId: { type: String, required: true },
     title: { type: String, required: true },
     repoUrl: { type: String, required: true },
     status: {
