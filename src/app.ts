@@ -15,13 +15,14 @@ const userRouter = ((UserModule as any).default || (UserModule as any).userRoute
 const app = express();
 
 // Configure CORS for Express
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Intercept preflight OPTIONS requests
 
 app.use(express.json());
 
