@@ -14,15 +14,41 @@ const userRouter = ((UserModule as any).default || (UserModule as any).userRoute
 
 const app = express();
 
-// Configure CORS for Express
-const corsOptions = {
+// Configure CORS options
+const corsOptions: cors.CorsOptions = {
   origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "X-CSRF-Token",
+    "X-Api-Version"
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
 };
 
+// Enable CORS for all routes
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Intercept preflight OPTIONS requests
+
+// Explicit preflight middleware for serverless routing
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token, X-Api-Version"
+  );
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+    return;
+  }
+  next();
+});
 
 app.use(express.json());
 
