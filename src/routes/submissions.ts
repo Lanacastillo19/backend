@@ -1,41 +1,61 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import Submission from "../models/Submission";
-import { connectDB } from "../config/db";
+import mongoose from "mongoose";
 
 const router = Router();
 
+// Connection helper for Vercel Serverless
+const ensureDbConnected = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error("MONGODB_URI environment variable is missing.");
+    }
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+  }
+};
+
 // GET /api/submissions
-router.get("/", async (req, res) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
-    await connectDB();
+    await ensureDbConnected();
     const submissions = await Submission.find().sort({ createdAt: -1 });
-    res.json(submissions);
-  } catch (error) {
-    console.error("Fetch submissions error:", error);
-    res.status(500).json({ message: "Failed to fetch submissions." });
+    return res.status(200).json(submissions);
+  } catch (error: any) {
+    console.error("GET /submissions error:", error);
+    return res.status(500).json({ 
+      message: "Failed to fetch submissions.", 
+      error: error.message 
+    });
   }
 });
 
 // POST /api/submissions
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
-    await connectDB();
+    await ensureDbConnected();
     const { courseId, title, repoUrl } = req.body;
 
     if (!courseId || !title || !repoUrl) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    const newSubmission = await Submission.create({
+    const newSubmission = new Submission({
       courseId,
       title,
       repoUrl,
+      status: "PENDING",
+      submittedAt: new Date(),
     });
 
-    return res.status(201).json(newSubmission);
-  } catch (error) {
-    console.error("Save submission error:", error);
-    return res.status(500).json({ message: "Failed to save to database." });
+    const savedSubmission = await newSubmission.save();
+    return res.status(201).json(savedSubmission);
+  } catch (error: any) {
+    console.error("POST /submissions error:", error);
+    return res.status(500).json({ 
+      message: "Failed to create submission.", 
+      error: error.message 
+    });
   }
 });
 
