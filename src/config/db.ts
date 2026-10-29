@@ -1,4 +1,11 @@
+import dns from "node:dns";
 import mongoose from "mongoose";
+
+// Local-only fix: Node's resolver fails the SRV lookup on some networks.
+// Vercel sets VERCEL=1, so this is skipped on the deployed app.
+if (!process.env.VERCEL) {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+}
 
 let isConnected = false;
 
